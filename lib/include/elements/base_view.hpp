@@ -144,6 +144,9 @@ namespace cycfi::elements
 
    enum class key_code : int16_t
    {
+#ifdef WIN32
+      ime_process_key   = -2,
+#endif
       unknown           = -1,
 
       // Printable keys

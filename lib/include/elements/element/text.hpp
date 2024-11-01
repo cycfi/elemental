@@ -156,6 +156,7 @@ namespace cycfi::elements
 
       char const*             caret_position(context const& ctx, point p);
       glyph_metrics           glyph_info(context const& ctx, char const* s);
+      bool                    get_caret_position(context const& ctx, rect& caret_bounds);
 
    private:
 

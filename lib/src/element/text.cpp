@@ -335,6 +335,34 @@ namespace cycfi::elements
          )
          return false;
 
+#ifdef WIN32
+      if(k.key == key_code::ime_process_key) {
+         rect caret_bounds;
+         if(get_caret_position(ctx, caret_bounds)) {
+            if(HIMC imc = ImmGetContext(ctx.view.host())) {
+               const auto& tl = ctx.canvas.user_to_device(caret_bounds.top_left());
+               const auto& br = ctx.canvas.user_to_device(caret_bounds.bottom_right());
+         
+               COMPOSITIONFORM cf;
+               memset(&cf, 0, sizeof(COMPOSITIONFORM));
+               cf.dwStyle = CFS_FORCE_POSITION;
+               cf.ptCurrentPos.x = tl.x + 1;
+               cf.ptCurrentPos.y = tl.y;
+               ImmSetCompositionWindow(imc, &cf);
+
+               CANDIDATEFORM candf;
+               memset(&candf, 0, sizeof(CANDIDATEFORM));
+               candf.dwIndex = 0;
+               candf.dwStyle = CFS_CANDIDATEPOS;
+               candf.ptCurrentPos.x = tl.x + 1;
+               candf.ptCurrentPos.y = br.y;
+               ImmSetCandidateWindow(imc, &candf);
+
+               return true;
+            }
+         }
+      }
+#endif
       _show_caret = true;
       bool move_caret = false;
       bool save_x = false;
@@ -584,6 +612,42 @@ namespace cycfi::elements
    bool basic_text_box::wants_control() const
    {
       return true;
+   }
+
+   bool basic_text_box::get_caret_position(context const& ctx, rect& caret_bounds) {
+      // Make sure _this_handle is initialized to this
+      if (!_this_handle)
+         _this_handle = std::make_shared<basic_text_box*>(this);
+
+      if (!editable() || _select_start == -1)
+         return false;
+
+      if (!_is_focus) //No caret if not focused
+         return false;
+
+      auto const& theme = get_theme();
+      // Handle the case where text is empty
+      if (_text.empty())
+      {
+         auto  size = _layout.metrics();
+         auto  line_height = size.ascent + size.descent + size.leading;
+         auto  width = theme.text_box_caret_width;
+         auto  left = ctx.bounds.left;
+         auto  top = ctx.bounds.top;
+
+         caret_bounds = rect{left, top, left + width, top + line_height};
+         return true;
+      }
+      else if (_select_start == _select_end)
+      {
+         auto  start_info = glyph_info(ctx, _text.data() + _select_start);
+         auto width = theme.text_box_caret_width;
+         rect& caret = start_info.bounds;
+
+         caret_bounds = rect{caret.left - 0.5f, caret.top, caret.left + width + 0.5f, caret.bottom};
+         return true;
+      }
+      return false;
    }
 
    void basic_text_box::draw_caret(context const& ctx)

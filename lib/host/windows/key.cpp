@@ -72,7 +72,7 @@ namespace cycfi::elements
       {
          // IME notifies that keys have been filtered by setting the virtual
          // key-code to VK_PROCESSKEY
-         return key_code::unknown;
+         return key_code::ime_process_key;
       }
 
       unsigned int key = HIWORD(lparam) & 0x1FF;
@@ -206,5 +206,6 @@ namespace cycfi::elements
          case 0x037:  return key_code::kp_multiply;
          case 0x04a:  return key_code::kp_subtract;
       }
+      return key_code::unknown;
    }
 }

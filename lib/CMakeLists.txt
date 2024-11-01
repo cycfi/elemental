@@ -348,9 +348,10 @@ if (WIN32 AND NOT MSVC)
    target_link_libraries(elements PUBLIC ws2_32)
 endif()
 
-# Replace missing Shcore library removed by WIN32_LEAN_AND_MEAN
+# 1.Replace missing Shcore library removed by WIN32_LEAN_AND_MEAN
+# 2.IME requires Imm32
 if (WIN32)
-   target_link_libraries(elements PUBLIC Shcore)
+   target_link_libraries(elements PUBLIC Shcore Imm32)
 endif()
 
 add_library(cycfi::elements ALIAS elements)
