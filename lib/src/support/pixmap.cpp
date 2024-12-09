@@ -11,6 +11,7 @@
 #include <elements/support/detail/stb_image.h>
 #include <infra/assert.hpp>
 #include <infra/filesystem.hpp>
+#include <bit>
 #include <string>
 #include <fstream>
 
@@ -105,6 +106,55 @@ namespace cycfi { namespace elements
 
       // Set scale and flag the surface as dirty
       cairo_surface_set_device_scale(_surface, 1/scale, 1/scale);
+      cairo_surface_mark_dirty(_surface);
+   }
+
+   pixmap::pixmap(uint8_t const *data, pixel_format fmt, extent size, float scale)
+       : _surface(nullptr)
+   {
+      if (fmt == pixel_format::invalid)
+         throw std::runtime_error{"Error: Cannot initialize format: INVALID"};
+
+      if (fmt != pixel_format::rgba32)
+         throw std::runtime_error{"Error: Format not supported"};
+
+      _surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, size.x, size.y);
+      if (!_surface)
+         throw std::runtime_error{"Failed to create pixmap."};
+
+      uint8_t *dest_data = cairo_image_surface_get_data(_surface);
+      size_t src_stride = size.x * 4;
+      size_t dest_stride = cairo_image_surface_get_stride(_surface);
+
+      for (int y = 0; y != size.y; ++y)
+      {
+         uint8_t const *src = data + (y * src_stride);
+         uint8_t *dest = dest_data + (y * dest_stride);
+         for (int x = 0; x != size.x; ++x)
+         {
+            // RGBA32 to ARGB32
+            if constexpr (std::endian::native == std::endian::big)
+            {
+               dest[0] = src[3]; // alpha
+               dest[1] = src[0]; // red
+               dest[2] = src[1]; // green
+               dest[3] = src[2]; // blue
+            }
+            else if constexpr (std::endian::native == std::endian::little)
+            {
+               dest[0] = src[1]; // blue
+               dest[1] = src[2]; // green
+               dest[2] = src[3]; // red
+               dest[3] = src[0]; // alpha
+            }
+
+            src += 4;
+            dest += 4;
+         }
+      }
+
+      // Set scale and flag the surface as dirty
+      cairo_surface_set_device_scale(_surface, 1 / scale, 1 / scale);
       cairo_surface_mark_dirty(_surface);
    }
 

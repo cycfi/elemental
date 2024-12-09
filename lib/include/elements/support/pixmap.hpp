@@ -25,6 +25,11 @@ namespace cycfi { namespace elements
       using std::runtime_error::runtime_error;
    };
 
+   enum class pixel_format {
+      invalid = -1,
+      rgba32,
+   };
+
    class pixmap
    {
    public:
@@ -46,6 +51,13 @@ namespace cycfi { namespace elements
 
       friend class canvas;
       friend class pixmap_context;
+
+      template <pixel_format fmt>
+      friend typename std::enable_if<fmt == pixel_format::rgba32, pixmap>::type
+      make_pixmap(std::uint8_t const *data, extent size, float scale);
+
+      explicit pixmap(std::uint8_t const *data, pixel_format fmt, extent size,
+                      float scale);
 
       cairo_surface_t*  _surface;
    };
@@ -101,6 +113,18 @@ namespace cycfi { namespace elements
       }
       return *this;
    }
-}}
+
+   //--------------------------------------------------------------------------
+   // Inlines
+   //--------------------------------------------------------------------------
+
+   template <pixel_format fmt>
+   inline typename std::enable_if<fmt == pixel_format::rgba32, pixmap>::type
+   make_pixmap(std::uint8_t const *data, extent size, float scale=1)
+   {
+      return pixmap(reinterpret_cast<std::uint8_t const *>(data), fmt, size, scale);
+   }
+
+   }}
 
 #endif
